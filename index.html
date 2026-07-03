@@ -18,10 +18,9 @@
             --border: #cbd5e1;
             --grid-line: #b4b4b4;
             
-            /* Screenshot 20260703-103332.jpg accurate color profiles */
+            /* Accurate color profiles without dark borders */
             --normal-cell-bg: #fdfbf7;   
             --highlight-bg: #ffff99;     
-            --highlight-border: #000000; 
         }
 
         body {
@@ -212,10 +211,9 @@
             transition: background-color 0.05s ease;
         }
 
+        /* Clean Yellow Fill without harsh borders */
         .month-cell-box.joining-highlight {
             background-color: var(--highlight-bg) !important;
-            box-shadow: inset 0 0 0 2.5px var(--highlight-border); 
-            border: 0.5px solid var(--highlight-border);
         }
 
         .grid-checkbox {
@@ -550,25 +548,22 @@
         const exportArea = document.getElementById('export-area');
         const tableWrapper = document.getElementById('tableWrapper');
 
-        // Capture static style state variables
         const originalWrapperStyle = tableWrapper.style.cssText;
         const originalWidth = exportArea.style.width;
 
-        // Force layout engine expansion before drawing to the canvas template
         tableWrapper.style.overflowX = 'visible';
         tableWrapper.style.width = 'auto';
-        exportArea.style.width = '1420px'; // Fully holds the entire 1400px min-width table context nicely
+        exportArea.style.width = '1420px'; 
 
         html2canvas(exportArea, {
-            scale: 3, // Premium quality scaling optimization without huge file lags
+            scale: 3, 
             backgroundColor: "#ffffff",
             useCORS: true,
             logging: false,
-            windowWidth: 1450, // Prevents horizontal mobile system window slicing engine clipping
+            windowWidth: 1450, 
             scrollX: 0,
             scrollY: -window.scrollY
         }).then(canvas => {
-            // Revert DOM back safely after image draw completion
             tableWrapper.style.cssText = originalWrapperStyle;
             exportArea.style.width = originalWidth;
             actionElements.forEach(el => el.style.display = '');
