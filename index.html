@@ -322,7 +322,7 @@
 
     <div id="export-area">
         <div class="capture-title" id="capture-title">Student Payment Ledger Sheet</div>
-        <div class="table-responsive">
+        <div class="table-responsive" id="tableWrapper">
             <table>
                 <thead>
                     <tr>
@@ -354,12 +354,10 @@
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     let students = [];
 
-    // Safely parse local storage structure
     try {
         const localData = localStorage.getItem('students_payment_grid_full');
         if (localData) {
             const parsed = JSON.parse(localData);
-            // Handle if local storage has wrapped object structure vs raw array
             students = Array.isArray(parsed) ? parsed : (parsed.data || []);
         }
     } catch(e) {
@@ -476,26 +474,21 @@
         renderTable();
     }
 
-    // Returns exact format: "03 Jul 2026"
     function getFormattedDate() {
         const date = new Date();
         const day = String(date.getDate()).padStart(2, '0');
         const monthsShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const month = monthsShort[date.getMonth()];
-        const year = date.getFullYear();
-        return `${day} ${month} ${year}`;
+        return `${day} ${monthsShort[date.getMonth()]} ${date.getFullYear()}`;
     }
 
-    // Returns exact format: "10:43 AM"
     function getFormattedTime() {
         const date = new Date();
         let hours = date.getHours();
         const minutes = String(date.getMinutes()).padStart(2, '0');
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
-        hours = hours ? hours : 12; // dynamic 12hr alignment
-        const hoursStr = String(hours).padStart(2, '0');
-        return `${hoursStr}:${minutes} ${ampm}`;
+        hours = hours ? hours : 12;
+        return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
     }
 
     function exportJSON() {
@@ -503,18 +496,13 @@
             alert("No data to export!");
             return;
         }
-
-        // Beautiful structural mapping inside backup JSON wrapper Object
         const jsonPackage = {
             exportDate: getFormattedDate(),
             exportTime: getFormattedTime(),
             data: students
         };
-
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonPackage, null, 2));
         const downloadAnchor = document.createElement('a');
-        
-        // Clean compressed file tag syntax structure
         const fileTimestamp = getFormattedDate().replace(/ /g, '-') + "_" + getFormattedTime().replace(/ /g, '').replace(':', '-');
         downloadAnchor.setAttribute("href", dataStr);
         downloadAnchor.setAttribute("download", `student_payment_backup_${fileTimestamp}.json`);
@@ -528,8 +516,6 @@
         fileReader.onload = function(e) {
             try {
                 const importedData = JSON.parse(e.target.result);
-                
-                // Smart parser checks whether it's wrapped package or plain Array
                 if (importedData && importedData.data && Array.isArray(importedData.data)) {
                     students = importedData.data;
                     saveAndRender();
@@ -537,7 +523,7 @@
                 } else if (Array.isArray(importedData)) {
                     students = importedData;
                     saveAndRender();
-                    alert("Data Loaded Successfully (Old backup layout format)!");
+                    alert("Data Loaded Successfully (Old layout format)!");
                 } else {
                     alert("Invalid File Structure Format!");
                 }
@@ -562,18 +548,29 @@
         title.style.display = 'block';
 
         const exportArea = document.getElementById('export-area');
+        const tableWrapper = document.getElementById('tableWrapper');
+
+        // Capture static style state variables
+        const originalWrapperStyle = tableWrapper.style.cssText;
+        const originalWidth = exportArea.style.width;
+
+        // Force layout engine expansion before drawing to the canvas template
+        tableWrapper.style.overflowX = 'visible';
+        tableWrapper.style.width = 'auto';
+        exportArea.style.width = '1420px'; // Fully holds the entire 1400px min-width table context nicely
 
         html2canvas(exportArea, {
-            scale: 4, 
+            scale: 3, // Premium quality scaling optimization without huge file lags
             backgroundColor: "#ffffff",
             useCORS: true,
             logging: false,
-            onclone: (clonedDoc) => {
-                const table = clonedDoc.querySelector('table');
-                table.style.tableLayout = 'fixed';
-                table.style.width = '100%';
-            }
+            windowWidth: 1450, // Prevents horizontal mobile system window slicing engine clipping
+            scrollX: 0,
+            scrollY: -window.scrollY
         }).then(canvas => {
+            // Revert DOM back safely after image draw completion
+            tableWrapper.style.cssText = originalWrapperStyle;
+            exportArea.style.width = originalWidth;
             actionElements.forEach(el => el.style.display = '');
             title.style.display = 'none';
 
@@ -584,6 +581,8 @@
             link.href = image;
             link.click();
         }).catch(err => {
+            tableWrapper.style.cssText = originalWrapperStyle;
+            exportArea.style.width = originalWidth;
             actionElements.forEach(el => el.style.display = '');
             title.style.display = 'none';
             alert("Export failed.");
