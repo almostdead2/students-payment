@@ -32,7 +32,7 @@
 
         .container {
             width: 100%;
-            max-width: 1450px;
+            max-width: 1550px; /* Expanded slightly for bigger boxes alignment */
             background: var(--card);
             padding: 30px;
             border-radius: 12px;
@@ -152,13 +152,13 @@
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed; /* Rigid layout geometry */
-            min-width: 1300px;
+            min-width: 1400px;
         }
 
         th, td {
-            padding: 14px 8px;
+            padding: 16px 8px; /* Increased top-bottom padding for bigger checkboxes */
             border: 1px solid var(--grid-line);
-            font-size: 14px;
+            font-size: 15px;
             color: #000;
             vertical-align: middle;
             text-align: center; /* Enforces uniform center alignment for everything */
@@ -169,15 +169,17 @@
         th {
             background-color: #cbd5e1;
             font-weight: 700;
+            font-size: 15px;
         }
 
-        /* FIXED FIXED NAME COLUMN ALIGNMENT */
+        /* Fixed Name Column Alignment */
         td:first-child, th:first-child {
-            text-align: center; /* Changed from left to center */
+            text-align: center; 
             font-weight: 700;
             padding-left: 8px;
             background-color: #f8fafc;
             width: 18%; /* Solid layout allocation */
+            font-size: 16px;
         }
 
         /* Action Column Width allocation */
@@ -185,13 +187,13 @@
             width: 8%;
         }
 
-        /* Centered Checkboxes Grid */
+        /* BIG BIG MONTHS CHECKBOXES GRID */
         .grid-checkbox {
             position: relative;
             cursor: pointer;
             display: inline-block;
-            width: 22px;
-            height: 22px;
+            width: 32px;  /* Increased size from 22px to 32px */
+            height: 32px; /* Increased size from 22px to 32px */
             margin: 0 auto;
         }
 
@@ -206,22 +208,24 @@
             position: absolute;
             top: 0;
             left: 0;
-            height: 22px;
-            width: 22px;
+            height: 32px; /* Matches parental box bounds */
+            width: 32px;  /* Matches parental box bounds */
             background-color: #f8fafc;
-            border: 1px solid #475569;
-            border-radius: 4px;
+            border: 1.5px solid #475569; /* Slightly thicker border for definition */
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 15px;
+            font-size: 22px; /* Massive distinct tick font scale */
             color: transparent;
             box-sizing: border-box;
+            transition: all 0.1s ease;
         }
 
         .grid-checkbox:hover input ~ .grid-tick {
             background-color: #e2e8f0;
+            border-color: #0f172a;
         }
 
         .grid-checkbox input:checked ~ .grid-tick {
@@ -328,7 +332,7 @@
             tdName.textContent = student.name;
             tr.appendChild(tdName);
 
-            // Months Columns (Centered)
+            // Months Columns (Centered Big Boxes)
             months.forEach(month => {
                 const tdMonth = document.createElement('td');
                 const label = document.createElement('label');
