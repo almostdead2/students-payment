@@ -16,12 +16,12 @@
             --card: #ffffff;
             --text: #0f172a;
             --border: #cbd5e1;
-            --grid-line: #b4b4b4; /* Soft grey lines matching your second routine screenshot */
+            --grid-line: #b4b4b4;
             
             /* Screenshot 20260703-103332.jpg accurate color profiles */
-            --normal-cell-bg: #fdfbf7;   /* Beautiful exact off-white tint from routine grid */
-            --highlight-bg: #ffff99;     /* Soft yellow background highlight */
-            --highlight-border: #000000; /* Sharp solid thick outline border */
+            --normal-cell-bg: #fdfbf7;   
+            --highlight-bg: #ffff99;     
+            --highlight-border: #000000; 
         }
 
         body {
@@ -187,7 +187,6 @@
             word-wrap: break-word;
         }
 
-        /* Matches the clean top header fill style */
         th {
             background-color: #eaeaea;
             font-weight: 600;
@@ -206,7 +205,6 @@
             width: 100px;
         }
 
-        /* Default base normal color matching Screenshot_20260703-103332.jpg */
         .month-cell-box {
             position: relative;
             cursor: pointer;
@@ -214,14 +212,12 @@
             transition: background-color 0.05s ease;
         }
 
-        /* EXACT HIGHLIGHT PROFILE MATCH: Yellow Fill + 3px Bold Black Boundary Line */
         .month-cell-box.joining-highlight {
             background-color: var(--highlight-bg) !important;
             box-shadow: inset 0 0 0 2.5px var(--highlight-border); 
             border: 0.5px solid var(--highlight-border);
         }
 
-        /* Checkbox outer layout shell */
         .grid-checkbox {
             position: relative;
             cursor: pointer;
@@ -239,7 +235,6 @@
             position: absolute;
         }
 
-        /* Rounded square checkbox inner panel overlay */
         .grid-tick {
             position: absolute;
             top: 0;
@@ -357,7 +352,19 @@
 
 <script>
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    let students = JSON.parse(localStorage.getItem('students_payment_grid_full')) || [];
+    let students = [];
+
+    // Safely parse local storage structure
+    try {
+        const localData = localStorage.getItem('students_payment_grid_full');
+        if (localData) {
+            const parsed = JSON.parse(localData);
+            // Handle if local storage has wrapped object structure vs raw array
+            students = Array.isArray(parsed) ? parsed : (parsed.data || []);
+        }
+    } catch(e) {
+        students = [];
+    }
 
     function renderTable() {
         const tbody = document.getElementById('studentTableBody');
@@ -371,24 +378,20 @@
         students.forEach((student, index) => {
             const tr = document.createElement('tr');
             
-            // Name Column
             const tdName = document.createElement('td');
             tdName.textContent = student.name;
             tr.appendChild(tdName);
 
-            // Months Columns
             months.forEach(month => {
                 const tdMonth = document.createElement('td');
                 tdMonth.className = 'month-cell-box';
                 
                 if (!student.highlights) student.highlights = {};
                 
-                // If flagged true, insert high intensity template styling
                 if (student.highlights[month]) {
                     tdMonth.classList.add('joining-highlight');
                 }
 
-                // Single tap anywhere inside the outer box handles highlight selection toggling
                 tdMonth.onclick = function(e) {
                     toggleHighlight(index, month);
                 };
@@ -401,7 +404,6 @@
                 if (!student.payments) student.payments = {};
                 input.checked = student.payments[month] || false;
                 
-                // Tap on checkbox element triggers core payment status inversion ONLY
                 input.onclick = function(e) {
                     e.stopPropagation(); 
                     togglePayment(index, month);
@@ -410,7 +412,6 @@
                 const span = document.createElement('span');
                 span.className = 'grid-tick';
                 
-                // Block event bubble leak upwards onto td container
                 label.onclick = function(e) {
                     e.stopPropagation();
                 };
@@ -421,7 +422,6 @@
                 tr.appendChild(tdMonth);
             });
 
-            // Action Column
             const tdAction = document.createElement('td');
             tdAction.className = 'action-column';
             const btn = document.createElement('button');
@@ -476,15 +476,48 @@
         renderTable();
     }
 
+    // Returns exact format: "03 Jul 2026"
+    function getFormattedDate() {
+        const date = new Date();
+        const day = String(date.getDate()).padStart(2, '0');
+        const monthsShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = monthsShort[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+    }
+
+    // Returns exact format: "10:43 AM"
+    function getFormattedTime() {
+        const date = new Date();
+        let hours = date.getHours();
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // dynamic 12hr alignment
+        const hoursStr = String(hours).padStart(2, '0');
+        return `${hoursStr}:${minutes} ${ampm}`;
+    }
+
     function exportJSON() {
         if(students.length === 0) {
             alert("No data to export!");
             return;
         }
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(students));
+
+        // Beautiful structural mapping inside backup JSON wrapper Object
+        const jsonPackage = {
+            exportDate: getFormattedDate(),
+            exportTime: getFormattedTime(),
+            data: students
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonPackage, null, 2));
         const downloadAnchor = document.createElement('a');
+        
+        // Clean compressed file tag syntax structure
+        const fileTimestamp = getFormattedDate().replace(/ /g, '-') + "_" + getFormattedTime().replace(/ /g, '').replace(':', '-');
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `student_payment_backup_${getFormattedTimestamp()}.json`);
+        downloadAnchor.setAttribute("download", `student_payment_backup_${fileTimestamp}.json`);
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
@@ -495,12 +528,18 @@
         fileReader.onload = function(e) {
             try {
                 const importedData = JSON.parse(e.target.result);
-                if (Array.isArray(importedData)) {
+                
+                // Smart parser checks whether it's wrapped package or plain Array
+                if (importedData && importedData.data && Array.isArray(importedData.data)) {
+                    students = importedData.data;
+                    saveAndRender();
+                    alert(`Data Loaded Successfully!\nExported on: ${importedData.exportDate} at ${importedData.exportTime}`);
+                } else if (Array.isArray(importedData)) {
                     students = importedData;
                     saveAndRender();
-                    alert("Data Imported Successfully!");
+                    alert("Data Loaded Successfully (Old backup layout format)!");
                 } else {
-                    alert("Invalid File Format!");
+                    alert("Invalid File Structure Format!");
                 }
             } catch (err) {
                 alert("Error reading file!");
@@ -509,24 +548,6 @@
         if(event.target.files[0]) {
             fileReader.readAsText(event.target.files[0]);
         }
-    }
-
-    function getFormattedTimestamp() {
-        const date = new Date();
-        const monthsShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = monthsShort[date.getMonth()];
-        const year = date.getFullYear();
-        
-        let hours = date.getHours();
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        
-        hours = hours % 12;
-        hours = hours ? hours : 12;
-        
-        return `${day}-${month}-${year}_${hours}:${minutes}${ampm}`;
     }
 
     function exportToImage() {
@@ -558,7 +579,8 @@
 
             const image = canvas.toDataURL("image/png", 1.0);
             const link = document.createElement('a');
-            link.download = `${getFormattedTimestamp()}.png`;
+            const fileTimestamp = getFormattedDate().replace(/ /g, '-') + "_" + getFormattedTime().replace(/ /g, '').replace(':', '-');
+            link.download = `payment_ledger_${fileTimestamp}.png`;
             link.href = image;
             link.click();
         }).catch(err => {
