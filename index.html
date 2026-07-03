@@ -16,8 +16,12 @@
             --card: #ffffff;
             --text: #0f172a;
             --border: #cbd5e1;
-            --grid-line: #475569; /* Sharp dark lines for ultra-HD image grid */
-            --highlight-color: #2563eb; /* Strong blue color for Joining Month highlight */
+            --grid-line: #b4b4b4; /* Soft grey lines matching your second routine screenshot */
+            
+            /* Screenshot 20260703-103332.jpg accurate color profiles */
+            --normal-cell-bg: #fdfbf7;   /* Beautiful exact off-white tint from routine grid */
+            --highlight-bg: #ffff99;     /* Soft yellow background highlight */
+            --highlight-border: #000000; /* Sharp solid thick outline border */
         }
 
         body {
@@ -140,19 +144,10 @@
             width: 100%;
         }
 
-        /* Guide text style */
-        .info-tip {
-            font-size: 13px;
-            color: #64748b;
-            margin-top: -15px;
-            margin-bottom: 15px;
-            font-style: italic;
-        }
-
         .table-responsive {
             overflow-x: auto;
-            border: 2px solid var(--grid-line);
-            border-radius: 8px;
+            border: 1px solid var(--grid-line);
+            border-radius: 4px;
             background: white;
         }
 
@@ -192,15 +187,16 @@
             word-wrap: break-word;
         }
 
+        /* Matches the clean top header fill style */
         th {
-            background-color: #cbd5e1;
-            font-weight: 700;
+            background-color: #eaeaea;
+            font-weight: 600;
         }
 
         td:first-child, th:first-child {
             text-align: center; 
-            font-weight: 700;
-            background-color: #f8fafc;
+            font-weight: 600;
+            background-color: #eaeaea;
             width: 220px;
             min-width: 220px;
             font-size: 16px;
@@ -210,27 +206,30 @@
             width: 100px;
         }
 
-        /* Month Box Outer Shell base design */
+        /* Default base normal color matching Screenshot_20260703-103332.jpg */
         .month-cell-box {
             position: relative;
-            user-select: none;
-            transition: all 0.2s ease;
+            cursor: pointer;
+            background-color: var(--normal-cell-bg);
+            transition: background-color 0.05s ease;
         }
 
-        /* DYNAMIC OUTER BOX HIGHLIGHT DESIGN (When student joined) */
+        /* EXACT HIGHLIGHT PROFILE MATCH: Yellow Fill + 3px Bold Black Boundary Line */
         .month-cell-box.joining-highlight {
-            background-color: #eff6ff !important; /* Soft highlight background fill */
-            box-shadow: inset 0 0 0 3px var(--highlight-color); /* Heavy solid internal outer box highlight lines */
-            border: 1.5px solid var(--highlight-color);
+            background-color: var(--highlight-bg) !important;
+            box-shadow: inset 0 0 0 2.5px var(--highlight-border); 
+            border: 0.5px solid var(--highlight-border);
         }
 
+        /* Checkbox outer layout shell */
         .grid-checkbox {
             position: relative;
             cursor: pointer;
             display: inline-block;
-            width: 32px;  
-            height: 32px; 
+            width: 36px;  
+            height: 36px; 
             margin: 0 auto;
+            vertical-align: middle;
         }
 
         .grid-checkbox input {
@@ -240,20 +239,21 @@
             position: absolute;
         }
 
+        /* Rounded square checkbox inner panel overlay */
         .grid-tick {
             position: absolute;
             top: 0;
             left: 0;
-            height: 32px; 
-            width: 32px;  
-            background-color: #f8fafc;
-            border: 1.5px solid #475569; 
-            border-radius: 6px;
+            height: 36px; 
+            width: 36px;  
+            background-color: #ffffff;
+            border: 1px solid #767676; 
+            border-radius: 8px; 
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 22px; 
+            font-size: 24px; 
             color: transparent;
             box-sizing: border-box;
         }
@@ -309,7 +309,6 @@
 
 <div class="container">
     <h1>📋 Student Payment</h1>
-    <div class="info-tip">💡 Tip: Double-click (বা long-press) any month box to highlight their joining month!</div>
     
     <div class="control-panel">
         <div class="input-group">
@@ -356,7 +355,7 @@
     </div>
 </div>
 
-<script {content: "✓"}>
+<script>
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     let students = JSON.parse(localStorage.getItem('students_payment_grid_full')) || [];
 
@@ -382,31 +381,17 @@
                 const tdMonth = document.createElement('td');
                 tdMonth.className = 'month-cell-box';
                 
-                // Initialize highlights safety check
                 if (!student.highlights) student.highlights = {};
                 
-                // If this box is flagged as active highlighted joining month
+                // If flagged true, insert high intensity template styling
                 if (student.highlights[month]) {
                     tdMonth.classList.add('joining-highlight');
                 }
 
-                // Double Click to Highlight functionality
-                tdMonth.ondblclick = (e) => {
-                    e.preventDefault();
+                // Single tap anywhere inside the outer box handles highlight selection toggling
+                tdMonth.onclick = function(e) {
                     toggleHighlight(index, month);
                 };
-
-                // Add support for touch devices via simple tap timing or long press framework
-                let lastTap = 0;
-                tdMonth.addEventListener('touchend', function (e) {
-                    let currentTime = new Date().getTime();
-                    let tapLength = currentTime - lastTap;
-                    if (tapLength < 300 && tapLength > 0) {
-                        e.preventDefault();
-                        toggleHighlight(index, month);
-                    }
-                    lastTap = currentTime;
-                });
 
                 const label = document.createElement('label');
                 label.className = 'grid-checkbox';
@@ -415,13 +400,20 @@
                 input.type = 'checkbox';
                 if (!student.payments) student.payments = {};
                 input.checked = student.payments[month] || false;
-                input.onclick = (e) => {
-                    e.stopPropagation(); // Prevents checkbox click from triggering cell dblclick
+                
+                // Tap on checkbox element triggers core payment status inversion ONLY
+                input.onclick = function(e) {
+                    e.stopPropagation(); 
                     togglePayment(index, month);
                 };
                 
                 const span = document.createElement('span');
                 span.className = 'grid-tick';
+                
+                // Block event bubble leak upwards onto td container
+                label.onclick = function(e) {
+                    e.stopPropagation();
+                };
                 
                 label.appendChild(input);
                 label.appendChild(span);
@@ -468,8 +460,6 @@
 
     function toggleHighlight(index, month) {
         if (!students[index].highlights) students[index].highlights = {};
-        
-        // Toggle the highlight state
         students[index].highlights[month] = !students[index].highlights[month];
         saveAndRender();
     }
