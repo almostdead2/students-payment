@@ -17,6 +17,7 @@
             --text: #0f172a;
             --border: #cbd5e1;
             --grid-line: #475569; /* Sharp dark lines for ultra-HD image grid */
+            --highlight-color: #2563eb; /* Strong blue color for Joining Month highlight */
         }
 
         body {
@@ -24,7 +25,7 @@
             background-color: var(--background);
             color: var(--text);
             margin: 0;
-            padding: 12px; /* Reduced for better mobile spacing */
+            padding: 12px;
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -50,10 +51,9 @@
             border-bottom: 1px solid var(--border);
         }
 
-        /* Control Panel Setup */
         .control-panel {
             display: flex;
-            flex-direction: column; /* Forces vertical stacking on mobile views */
+            flex-direction: column;
             gap: 20px;
             margin: 20px 0 25px 0;
             background: #f1f5f9;
@@ -62,18 +62,16 @@
             border: 1px solid var(--border);
         }
 
-        /* CRITICAL MOBILE FIX: Stack elements cleanly */
         .input-group {
             display: flex;
-            flex-direction: column; /* Places button DOWN below the text field */
+            flex-direction: column;
             gap: 14px;
             width: 100%;
         }
 
-        /* Large Inputs and Boxes */
         input[type="text"] {
             width: 100%;
-            padding: 16px; /* Bigger box height */
+            padding: 16px;
             border: 2px solid var(--border);
             border-radius: 8px;
             font-size: 16px;
@@ -87,13 +85,12 @@
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
         }
 
-        /* Large Downward Add Student Button */
         .btn-add {
-            width: 100%; /* Spans full width right below input box */
+            width: 100%;
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 16px 24px; /* Big chunkier touch target box */
+            padding: 16px 24px;
             border-radius: 8px;
             font-size: 16px;
             cursor: pointer;
@@ -143,7 +140,15 @@
             width: 100%;
         }
 
-        /* Aligned Grid Workspace */
+        /* Guide text style */
+        .info-tip {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: -15px;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
         .table-responsive {
             overflow-x: auto;
             border: 2px solid var(--grid-line);
@@ -192,22 +197,33 @@
             font-weight: 700;
         }
 
-        /* FIX: MAKES THE STUDENT NAME BOX BIGGER AND STABLE ON MOBILE OVERFLOW */
         td:first-child, th:first-child {
             text-align: center; 
             font-weight: 700;
             background-color: #f8fafc;
-            width: 220px; /* Rigid broad px allocation to keep name frame BIG */
+            width: 220px;
             min-width: 220px;
             font-size: 16px;
         }
 
-        /* Action Column Width allocation */
         .action-column {
             width: 100px;
         }
 
-        /* Big Months Checkboxes Grid */
+        /* Month Box Outer Shell base design */
+        .month-cell-box {
+            position: relative;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        /* DYNAMIC OUTER BOX HIGHLIGHT DESIGN (When student joined) */
+        .month-cell-box.joining-highlight {
+            background-color: #eff6ff !important; /* Soft highlight background fill */
+            box-shadow: inset 0 0 0 3px var(--highlight-color); /* Heavy solid internal outer box highlight lines */
+            border: 1.5px solid var(--highlight-color);
+        }
+
         .grid-checkbox {
             position: relative;
             cursor: pointer;
@@ -270,7 +286,6 @@
         
         #fileInput { display: none; }
 
-        /* Tablet/Desktop layout optimization */
         @media (min-width: 768px) {
             .control-panel {
                 flex-direction: row;
@@ -294,15 +309,14 @@
 
 <div class="container">
     <h1>📋 Student Payment</h1>
+    <div class="info-tip">💡 Tip: Double-click (বা long-press) any month box to highlight their joining month!</div>
     
     <div class="control-panel">
-        <!-- Add Student Group (Stacking order fixed) -->
         <div class="input-group">
             <input type="text" id="studentName" placeholder="Enter Student Name...">
             <button class="btn-add" onclick="addStudent()">+ Add Student</button>
         </div>
         
-        <!-- Action Group -->
         <div class="export-group">
             <button class="btn btn-outline" onclick="exportJSON()" title="Download JSON Backup Data">💾 Export (JSON)</button>
             <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()" title="Load JSON Backup Data">📂 Import</button>
@@ -312,7 +326,6 @@
         </div>
     </div>
 
-    <!-- Layout Grid Workspace -->
     <div id="export-area">
         <div class="capture-title" id="capture-title">Student Payment Ledger Sheet</div>
         <div class="table-responsive">
@@ -343,7 +356,7 @@
     </div>
 </div>
 
-<script>
+<script {content: "✓"}>
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     let students = JSON.parse(localStorage.getItem('students_payment_grid_full')) || [];
 
@@ -359,7 +372,7 @@
         students.forEach((student, index) => {
             const tr = document.createElement('tr');
             
-            // Name Column (Bigger fixed bounding boxes)
+            // Name Column
             const tdName = document.createElement('td');
             tdName.textContent = student.name;
             tr.appendChild(tdName);
@@ -367,6 +380,34 @@
             // Months Columns
             months.forEach(month => {
                 const tdMonth = document.createElement('td');
+                tdMonth.className = 'month-cell-box';
+                
+                // Initialize highlights safety check
+                if (!student.highlights) student.highlights = {};
+                
+                // If this box is flagged as active highlighted joining month
+                if (student.highlights[month]) {
+                    tdMonth.classList.add('joining-highlight');
+                }
+
+                // Double Click to Highlight functionality
+                tdMonth.ondblclick = (e) => {
+                    e.preventDefault();
+                    toggleHighlight(index, month);
+                };
+
+                // Add support for touch devices via simple tap timing or long press framework
+                let lastTap = 0;
+                tdMonth.addEventListener('touchend', function (e) {
+                    let currentTime = new Date().getTime();
+                    let tapLength = currentTime - lastTap;
+                    if (tapLength < 300 && tapLength > 0) {
+                        e.preventDefault();
+                        toggleHighlight(index, month);
+                    }
+                    lastTap = currentTime;
+                });
+
                 const label = document.createElement('label');
                 label.className = 'grid-checkbox';
                 
@@ -374,7 +415,10 @@
                 input.type = 'checkbox';
                 if (!student.payments) student.payments = {};
                 input.checked = student.payments[month] || false;
-                input.onclick = () => togglePayment(index, month);
+                input.onclick = (e) => {
+                    e.stopPropagation(); // Prevents checkbox click from triggering cell dblclick
+                    togglePayment(index, month);
+                };
                 
                 const span = document.createElement('span');
                 span.className = 'grid-tick';
@@ -405,9 +449,13 @@
         if (!name) return;
 
         const initialPayments = {};
-        months.forEach(month => initialPayments[month] = false);
+        const initialHighlights = {};
+        months.forEach(month => {
+            initialPayments[month] = false;
+            initialHighlights[month] = false;
+        });
 
-        students.push({ name, payments: initialPayments });
+        students.push({ name, payments: initialPayments, highlights: initialHighlights });
         saveAndRender();
         input.value = '';
     }
@@ -416,6 +464,14 @@
         if (!students[index].payments) students[index].payments = {};
         students[index].payments[month] = !students[index].payments[month];
         localStorage.setItem('students_payment_grid_full', JSON.stringify(students));
+    }
+
+    function toggleHighlight(index, month) {
+        if (!students[index].highlights) students[index].highlights = {};
+        
+        // Toggle the highlight state
+        students[index].highlights[month] = !students[index].highlights[month];
+        saveAndRender();
     }
 
     function deleteStudent(index) {
